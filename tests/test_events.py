@@ -104,3 +104,34 @@ def test_write_events_rejects_invalid_doc_and_leaves_existing_file_untouched(tmp
     with pytest.raises(EventsValidationError):
         write_events(path, {"schema_version": 999, "events": []})
     assert load_events(path) == good_doc
+
+
+def test_write_events_cleans_up_temp_file_on_mid_write_failure(tmp_path, monkeypatch):
+    """Verify cleanup when json.dump (post-temp-file creation) fails.
+
+    This exercises the except BaseException: os.unlink(tmp_path) branch
+    that ensures atomicity even if something fails *after* mkstemp.
+    """
+    path = tmp_path / "events.json"
+    good_doc = {"schema_version": SCHEMA_VERSION, "generated_at": None, "events": []}
+
+    # Write an initial good file and save its content to verify later.
+    write_events(path, good_doc)
+    original_content = path.read_bytes()
+
+    # Monkeypatch json.dump to raise an exception after temp file exists.
+    def failing_dump(*args, **kwargs):
+        raise RuntimeError("Simulated json.dump failure")
+
+    monkeypatch.setattr("dsscraper.events.json.dump", failing_dump)
+
+    # Call write_events with a valid doc (passes validation, creates temp file, then fails on dump).
+    new_doc = {"schema_version": SCHEMA_VERSION, "generated_at": "2026-07-22T12:00:00+00:00", "events": []}
+    with pytest.raises(RuntimeError, match="Simulated json.dump failure"):
+        write_events(path, new_doc)
+
+    # Assert no temp files remain.
+    assert list(tmp_path.glob(".events-*")) == [], "Temp file was not cleaned up"
+
+    # Assert the original file is byte-for-byte unchanged.
+    assert path.read_bytes() == original_content, "Original file was modified"
