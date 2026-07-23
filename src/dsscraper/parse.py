@@ -151,7 +151,7 @@ def gemini_extract(caption: str, *, client) -> ParsedEvent | None:
         description=data.get("description") or None,
         recurrence=data.get("recurrence") or None,
         parsed_by="llm",
-        confidence=float(data.get("confidence", 0.7)),
+        confidence=float(data.get("confidence") or 0.7),
     )
 
 

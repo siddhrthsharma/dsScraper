@@ -71,6 +71,15 @@ def test_gemini_extract_returns_none_for_non_event():
     assert gemini_extract("just chilling, no event here", client=client) is None
 
 
+def test_gemini_extract_defaults_confidence_when_explicitly_null():
+    client = FakeGeminiClient(
+        '{"is_event": true, "title": "Test Event", "confidence": null}'
+    )
+    result = gemini_extract("some caption", client=client)
+    assert result.title == "Test Event"
+    assert result.confidence == 0.7
+
+
 def test_parse_caption_prefers_marker_over_llm():
     caption = "#dsevent\nEvent: Marker Wins\nWhen: Dec 1, 2026 5pm"
     client = FakeGeminiClient(load_fixture_text("gemini_response_not_event.json"))
