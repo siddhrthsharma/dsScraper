@@ -4,6 +4,7 @@ Nothing outside this module talks to Meta directly.
 """
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -15,6 +16,7 @@ from .config import API_VERSION, GRAPH_HOST, MEDIA_FIELDS
 
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 _MAX_ATTEMPTS = 3
+_TOKEN_PARAM_RE = re.compile(r"(access_token=)[^&\s]+")
 
 
 class InstagramAPIError(Exception):
@@ -53,12 +55,16 @@ def _get_with_retries(http, url, params, *, sleep):
         try:
             response = http.get(url, params=params)
         except requests.exceptions.RequestException as exc:
-            last_error = InstagramAPIError(str(exc), status_code=0)
-            sleep(2**attempt)
+            last_error = InstagramAPIError(
+                _TOKEN_PARAM_RE.sub(r"\1<redacted>", str(exc)), status_code=0
+            )
+            if attempt < _MAX_ATTEMPTS - 1:
+                sleep(2**attempt)
             continue
         if response.status_code in _RETRYABLE_STATUS:
             last_error = _error_from_response(response)
-            sleep(2**attempt)
+            if attempt < _MAX_ATTEMPTS - 1:
+                sleep(2**attempt)
             continue
         if not response.ok:
             raise _error_from_response(response)

@@ -81,6 +81,40 @@ def test_fetch_recent_media_retries_network_errors():
     assert len(results) == 2
 
 
+def test_fetch_recent_media_redacts_access_token_from_network_error_message():
+    class ExplodingHTTP:
+        def get(self, url, params=None):
+            raise requests.exceptions.ConnectionError(
+                "HTTPSConnectionPool(host='graph.instagram.com', port=443): "
+                "Max retries exceeded with url: /v25.0/id/media?"
+                "access_token=SUPERSECRETVALUE&fields=caption"
+            )
+
+    since = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    with pytest.raises(InstagramAPIError) as exc_info:
+        fetch_recent_media(
+            "SUPERSECRETVALUE", "id", since=since, http=ExplodingHTTP(), sleep=lambda _: None
+        )
+    message = str(exc_info.value)
+    assert "SUPERSECRETVALUE" not in message
+    assert "<redacted>" in message
+
+
+def test_fetch_recent_media_does_not_sleep_after_final_attempt():
+    sleep_calls = []
+    http = FakeHTTP([
+        FakeResponse(json_body={"error": {"message": "rate limited"}}, status_code=429),
+        FakeResponse(json_body={"error": {"message": "rate limited"}}, status_code=429),
+        FakeResponse(json_body={"error": {"message": "rate limited"}}, status_code=429),
+    ])
+    since = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    with pytest.raises(InstagramAPIError):
+        fetch_recent_media(
+            "token", "id", since=since, http=http, sleep=lambda s: sleep_calls.append(s)
+        )
+    assert len(sleep_calls) == 2
+
+
 def test_refresh_long_lived_token_returns_new_token_and_ttl():
     body = load_fixture("refresh_token_response.json")
     http = FakeHTTP([FakeResponse(json_body=body)])
