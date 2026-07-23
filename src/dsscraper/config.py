@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 API_VERSION = "v25.0"
 GRAPH_HOST = "https://graph.instagram.com"
-LOOKBACK_DAYS = 90
+LOOKBACK_DAYS = 45
 MEDIA_FIELDS = [
     "id",
     "caption",
