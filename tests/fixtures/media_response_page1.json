@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "id": "17895694728",
+      "caption": "🎉 Join us this week! #dsevent\nEvent: Intro to Pandas Workshop\nWhen: Oct 5, 2026 6:00pm - 7:30pm\nWhere: Phelps 1260",
+      "media_type": "IMAGE",
+      "media_url": "https://scontent.cdninstagram.com/photo1.jpg",
+      "permalink": "https://www.instagram.com/p/Cxyz1/",
+      "timestamp": "2026-09-20T18:00:00+0000"
+    },
+    {
+      "id": "17895694729",
+      "caption": "Had an amazing time at the socal datathon this weekend, thanks to everyone who came out!",
+      "media_type": "IMAGE",
+      "media_url": "https://scontent.cdninstagram.com/photo2.jpg",
+      "permalink": "https://www.instagram.com/p/Cxyz2/",
+      "timestamp": "2026-09-18T12:00:00+0000"
+    }
+  ],
+  "paging": {
+    "cursors": {"before": "before1", "after": "after1"},
+    "next": "https://graph.instagram.com/v25.0/17841400000000000/media?after=after1&access_token=IGAATEST"
+  }
+}
