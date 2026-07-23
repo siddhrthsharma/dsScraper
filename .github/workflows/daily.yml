@@ -1,0 +1,53 @@
+name: Daily events sync
+
+on:
+  schedule:
+    - cron: "0 15 * * *"  # 15:00 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run pipeline (fetch, parse, write, commit)
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python -m dsscraper.pipeline
+
+      - name: Commit events.json if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- events.json; then
+            echo "No changes to events.json"
+          else
+            git add events.json
+            git commit -m "chore: update events.json"
+            git pull --rebase origin main
+            git push
+          fi
+
+      # Runs regardless of whether the data step above succeeded — a token
+      # refresh problem is independent of a data-fetch problem, and by this
+      # point the data step (if it could succeed) already has.
+      - name: Refresh IG_ACCESS_TOKEN
+        if: always()
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GH_PAT_SECRETS }}
+        run: python -m dsscraper.refresh_token
