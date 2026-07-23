@@ -68,8 +68,13 @@ def parse_marker(caption: str) -> ParsedEvent | None:
         if not match:
             continue
         key = _LABEL_ALIASES.get(match.group(1).strip().lower())
-        if key:
-            fields[key] = match.group(2).strip()
+        if not key:
+            continue
+        value = match.group(2).strip()
+        if key == "when" and "when" in fields:
+            fields["when"] = f"{fields['when']} {value}"
+        else:
+            fields[key] = value
 
     title = fields.get("title")
     if not title:

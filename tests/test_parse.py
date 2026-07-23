@@ -45,6 +45,17 @@ def test_parse_marker_is_case_insensitive_and_label_tolerant():
     assert result.location == "Girvetz 1004"
 
 
+def test_parse_marker_combines_separate_date_and_time_lines():
+    caption = (
+        "#dsevent\n"
+        "Event: Some Meeting\n"
+        "Date: Oct 5, 2026\n"
+        "Time: 6:00pm"
+    )
+    result = parse_marker(caption)
+    assert result.start == datetime(2026, 10, 5, 18, 0)
+
+
 def test_gemini_extract_returns_event_from_structured_response():
     client = FakeGeminiClient(load_fixture_text("gemini_response_event.json"))
     caption = "Come hang out with us this Monday for snacks and networking!"
