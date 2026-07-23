@@ -25,7 +25,7 @@ def _persist_token(new_token: str) -> None:
         capture_output=True,
     )
     if result.returncode != 0:
-        raise RuntimeError("gh secret set failed (see job logs for gh's stderr)")
+        raise RuntimeError(f"gh secret set failed: {result.stderr}")
 
 
 def main() -> None:
